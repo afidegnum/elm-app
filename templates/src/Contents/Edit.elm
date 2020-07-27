@@ -1,7 +1,8 @@
-module Contents.Edit exposing (Model, Msg, init, update, view)
+module Contents.Edit exposing (Model, Msg, init, update, view, viewContentTypetatus)
 
 import Browser.Navigation as Nav
 import ContentBox exposing (Content, ContentId, ContentType, TypeId, contentDecoder, contentEncoder, contentIdToString, contentListDecoder, contentTypeIdToString, content_typesDecoder, links)
+import Contents.Read exposing (viewLinkOrText)
 import Element exposing (Element, centerX, centerY, column, el, fill, fillPortion, focused, height, image, mouseOver, padding, paddingEach, paddingXY, px, rgb255, rgba255, row, spacing, spacingXY, text, width)
 import Element.Background as Background
 import Element.Border as Border
@@ -14,15 +15,18 @@ import Html.Events exposing (onClick, onInput)
 import Http
 import List.Extra as List
 import RemoteData exposing (WebData)
-import Route
+import Route exposing (Route)
 
 
 type alias Model =
     { key : Nav.Key
     , content_type : WebData ContentType
     , content_types : WebData (List ContentType)
+    , content_types_list : WebData (List ContentType)
+    , content_list : WebData (List Content)
     , content : WebData Content
     , saveError : Maybe String
+    , route : Route
     }
 
 
@@ -35,9 +39,12 @@ initialModel : Nav.Key -> Model
 initialModel navKey =
     { key = navKey
     , content = RemoteData.Loading
+    , content_types_list = RemoteData.Loading
+    , content_list = RemoteData.NotAsked
     , content_type = RemoteData.NotAsked
     , content_types = RemoteData.Loading
     , saveError = Nothing
+    , route = Route.Home
     }
 
 
@@ -189,6 +196,36 @@ viewError errorMessage =
         , Element.text errorMessage
         ]
 
+viewContentTypes : Route -> List ContentType -> Element Msg
+viewContentTypes route content_types =
+    column []
+        [ column [] [ Element.text "Menus" ]
+        , column [] (List.map (onePage route) content_types)
+        ]
+
+onePage : Route -> ContentType -> Element Msg
+onePage route content_type =
+    el [] (viewLinkOrText (Route.ListContentByType content_type.id) route content_type.name ("/admin/type/" ++ contentTypeIdToString content_type.id))
+
+
+viewContentTypetatus : Model -> Element Msg
+viewContentTypetatus model =
+    case model.content_types_list of
+        RemoteData.NotAsked ->
+            el
+                [ Font.color (rgb255 94 65 63), Font.size 40 ]
+                (Element.text "Not Loaded")
+
+        RemoteData.Loading ->
+            el
+                [ Font.color (rgb255 94 65 63), Font.size 40 ]
+                (Element.text "Loading ...")
+
+        RemoteData.Success content_types ->
+            viewContentTypes model.route content_types
+
+        RemoteData.Failure httpError ->
+            viewError (createErrorMessage httpError)
 
 view : Model -> Element Msg
 view model =

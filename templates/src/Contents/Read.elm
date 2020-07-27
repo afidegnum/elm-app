@@ -1,4 +1,4 @@
-module Contents.Read exposing (Model, Msg, init, update, viewContentByType, viewReadContent, viewContentTypetatus)
+module Contents.Read exposing (Model, Msg, init, update, viewContentByType, viewReadContent, readContentStatus, viewContentTypetatus, contentLink, viewContentFiltertatus, viewLinkOrText)
 
 import ContentBox exposing (Content, ContentId, ContentType, TypeId, contentDecoder, contentIdToString, contentListDecoder, contentTypeIdToString, content_typesDecoder, links)
 import Element exposing (Element, centerX, centerY, column, el, fill, fillPortion, focused, height, image, mouseOver, padding, paddingEach, paddingXY, px, rgb255, rgba255, row, spacing, spacingXY, text, width)
@@ -15,22 +15,22 @@ type alias Model =
     , content_list : WebData (List Content)
     , content : WebData Content
     , deleteError : Maybe String
-    , route : Route
+    --, route : Route
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( initialModel, fetchContentTypeCommand )
+    ( initialModel, Cmd.batch [fetchContentTypeCommand, fetchContentCommand] )
 
 
 initialModel : Model
 initialModel =
     { content_types_list = RemoteData.Loading
-    , content_list = RemoteData.NotAsked
-    , content = RemoteData.NotAsked
+    , content_list = RemoteData.Loading
+    , content = RemoteData.Loading
     , deleteError = Nothing
-    , route = Route.Home
+    --, route = Route.Admin
     }
 
 
@@ -310,6 +310,7 @@ viewOneContent content =
         , Element.text content.submitted_date
         , Element.text content.modified_date
         ]
+
 
 
 viewMenu : Route -> Element msg

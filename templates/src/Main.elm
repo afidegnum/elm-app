@@ -2,10 +2,10 @@ module Main exposing (main)
 
 import Browser exposing (Document, UrlRequest)
 import Browser.Navigation as Nav
-import ContentBox exposing (contentIdToString)
+import ContentBox exposing (contentIdToString, filterContentById)
 import Contents.Edit as EditCnt
 import Contents.New as NewCnt
-import Contents.Read as ReadCnt
+import Contents.Read as ReadCnt exposing (contentLink, readContentStatus, viewContentFiltertatus, viewContentTypetatus)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Font as Font
@@ -117,7 +117,7 @@ pageAdminOne model =
     { title = "Admin "
     , content =
         column [ width fill, height fill ]
-            [ currentView model ]
+            [ currentViewBlocks model ]
     }
 
 
@@ -126,29 +126,96 @@ type alias Page msg =
     , content : Element msg
     }
 
+--
+--currentView : Model -> Element Msg
+--currentView model =
+--    case model.page of
+--        NotFoundPageModel ->
+--            notFoundView
+--
+--        ListPageModel pageModel ->
+--            ReadCnt.viewContentTypetatus pageModel
+--                |> Element.map ListPageMsg
+--
+--        EditPageModel pageModel ->
+--            EditCnt.view pageModel
+--                |> Element.map EditPageMsg
+--
+--        SingleItemPageModel pageModel ->
+--            ReadCnt.viewReadContent pageModel
+--                -- views for single content item
+--                |> Element.map ListPageMsg
+--
+--        NewPageModel pageModel ->
+--            NewCnt.view pageModel
+--                |> Element.map NewPageMsg
+--
 
-currentView : Model -> Element Msg
-currentView model =
-    case model.page of
-        NotFoundPageModel ->
-            notFoundView
 
-        ListPageModel pageModel ->
-            ReadCnt.viewContentTypetatus pageModel
-                |> Element.map ListPageMsg
 
-        EditPageModel pageModel ->
-            EditCnt.view pageModel
-                |> Element.map EditPageMsg
+currentViewBlocks : Model -> Element Msg
+currentViewBlocks model =
+    let
+        leftpane =
+            case model.page of
+                NotFoundPageModel ->
+                    notFoundView
 
-        SingleItemPageModel pageModel ->
-            ReadCnt.viewReadContent pageModel
-                -- views for single content item
-                |> Element.map ListPageMsg
+                ListPageModel pageModel ->
+                    ReadCnt.viewContentTypetatus pageModel
+                        |> Element.map ListPageMsg
 
-        NewPageModel pageModel ->
-            NewCnt.view pageModel
-                |> Element.map NewPageMsg
+                EditPageModel pageModel ->
+                    EditCnt.viewContentTypetatus pageModel
+                        |> Element.map EditPageMsg
+
+                SingleItemPageModel pageModel ->
+                    --ReadCnt.viewReadContent pageModel
+                        -- views for single content item
+                    column [ height fill, width fill, Background.color (rgb255 240 245 255) ]
+                        [ viewContentFiltertatus pageModel
+                        , viewContentTypetatus pageModel
+                        ]
+                        |> Element.map ListPageMsg
+
+                NewPageModel pageModel ->
+                    NewCnt.view pageModel
+                        |> Element.map NewPageMsg
+
+        rightpane =
+            case model.page of
+                NotFoundPageModel ->
+                    notFoundView
+
+                ListPageModel pageModel ->
+                    --ReadCnt.viewContentTypetatus pageModel
+                    column []
+                        [ contentLink model.route
+                        , viewContentFiltertatus pageModel
+                        ]
+                        |> Element.map ListPageMsg
+
+                EditPageModel pageModel ->
+                    EditCnt.view pageModel
+                        |> Element.map EditPageMsg
+
+                SingleItemPageModel pageModel ->
+                    ReadCnt.viewReadContent pageModel
+                        -- views for single content item
+
+                    |> Element.map ListPageMsg
+
+                NewPageModel pageModel ->
+                    NewCnt.view pageModel
+                        |> Element.map NewPageMsg
+
+    in
+    row [ height fill, width fill ]
+        [ el [ width <| fillPortion 1, height fill ] leftpane
+        , el [ width <| fillPortion 4, height fill ] rightpane
+        ]
+
+
 
 
 view : Model -> Browser.Document Msg
@@ -160,7 +227,7 @@ view model =
                 [ el [ width fill, width fill ] (headerContainer model)
 
                 -- , paragraph [] [ Element.text (Debug.toString model) ]
-                , el [ height fill, width <| px 1220, Background.color (rgb255 237 255 243), centerX ] (currentView model)
+                , el [ height fill, width <| px 1220, Background.color (rgb255 237 255 243), centerX ] (currentViewBlocks model)
                 , footerContainer
                 ]
         ]
